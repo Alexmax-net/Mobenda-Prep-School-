@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobenda Preparatory School - Records</title>
+<style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+  body { margin: 0; background: #f4f6fa; color: #222; }
+  header { background: #0b3d91; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { margin: 0; font-size: 20px; }
+  .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+  .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+  .btn { background: #0b3d91; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; }
+  .btn-red { background: #d32f2f; }
+  .btn-green { background: #2e7d32; }
+  input, select { width: 100%; padding: 10px; margin: 6px 0 12px 0; border: 1px solid #ccc; border-radius: 8px; }
+  label { font-weight: bold; font-size: 14px; }
+  nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  nav button { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #0b3d91; background: white; color: #0b3d91; cursor: pointer; font-weight: bold; }
+  nav button.active { background: #0b3d91; color: white; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 14px; }
+  th { background: #0b3d91; color: white; }
+  #loginBox { max-width: 400px; margin: 60px auto; }
+  .stats { display: flex; gap: 15px; }
+  .stat { flex: 1; background: #0b3d91; color: white; padding: 20px; border-radius: 12px; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>MOBENDA PREPARATORY SCHOOL</h1>
+  <button class="btn btn-red" onclick="logout()">Logout</button>
+</header>
+
+<div id="loginBox" class="card">
+  <h2>Staff Login</h2>
+  <label>Username</label>
+  <input id="username" placeholder="e.g. admin or teacher1">
+  <label>PIN / Password</label>
+  <input id="password" type="password" placeholder="Enter PIN">
+  <button class="btn" style="width:100%" onclick="login()">Login</button>
+  <p style="font-size:13px; margin-top:10px;">Default Admin: <b>admin / 1234</b> - Change am inside Settings after you login.</p>
+</div>
+
+<div class="container" id="app" style="display:none;">
+  <div class="stats">
+    <div class="stat"><h3 id="studentCount">0</h3><p>Students</p></div>
+    <div class="stat"><h3 id="staffCount">0</h3><p>Staff</p></div>
+  </div>
+
+  <nav>
+    <button id="btnStudents" class="active" onclick="showTab('students')">Students</button>
+    <button id="btnStaff" onclick="showTab('staff')">Staff</button>
+    <button id="btnSettings" onclick="showTab('settings')">Staff Accounts</button>
+  </nav>
+
+  <div id="tabStudents" class="card">
+    <h3>Add New Student</h3>
+    <input id="sName" placeholder="Student Full Name">
+    <input id="sClass" placeholder="Class (e.g. Basic 4)">
+    <select id="sGender"><option>Male</option><option>Female</option></select>
+    <input id="sGuardian" placeholder="Guardian Name">
+    <input id="sPhone" placeholder="Guardian Phone">
+    <button class="btn btn-green" onclick="addStudent()">Save Student</button>
+    <input id="searchStudent" placeholder="Search student..." onkeyup="renderStudents()" style="margin-top:15px;">
+    <table><tr><th>Name</th><th>Class</th><th>Guardian</th><th>Phone</th><th>Action</th></tr><tbody id="studentTable"></tbody></table>
+  </div>
+
+  <div id="tabStaff" class="card" style="display:none;">
+    <h3>Add New Staff</h3>
+    <input id="tName" placeholder="Staff Full Name">
+    <input id="tRole" placeholder="Role (Teacher, Accountant, etc)">
+    <input id="tSubject" placeholder="Subject / Position">
+    <input id="tPhone" placeholder="Phone">
+    <button class="btn btn-green" onclick="addStaff()">Save Staff</button>
+    <input id="searchStaff" placeholder="Search staff..." onkeyup="renderStaffs()" style="margin-top:15px;">
+    <table><tr><th>Name</th><th>Role</th><th>Subject</th><th>Phone</th><th>Action</th></tr><tbody id="staffTable"></tbody></table>
+  </div>
+
+  <div id="tabSettings" class="card" style="display:none;">
+    <h3>Manage Staff Logins</h3>
+    <p>Add login for each staff so dem fit enter the system.</p>
+    <input id="newUser" placeholder="Username">
+    <input id="newPass" placeholder="PIN / Password">
+    <button class="btn" onclick="addUser()">Add Staff Account</button>
+    <table><tr><th>Username</th><th>Action</th></tr><tbody id="userTable"></tbody></table>
+  </div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem('mobenda_data')) || { students: [], staffs: [], users: [{u:'admin', p:'1234'}] };
+let currentUser = null;
+
+function save(){ localStorage.setItem('mobenda_data', JSON.stringify(data)); updateStats(); }
+
+function updateStats(){
+  document.getElementById('studentCount').innerText = data.students.length;
+  document.getElementById('staffCount').innerText = data.staffs.length;
+  renderStudents(); renderStaffs(); renderUsers();
+}
+
+function login(){
+  let u = document.getElementById('username').value.trim();
+  let p = document.getElementById('password').value.trim();
+  let found = data.users.find(x => x.u === u && x.p === p);
+  if(found){
+    currentUser = u;
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    updateStats();
+  } else { alert('Wrong username or PIN'); }
+}
+function logout(){ location.reload(); }
+
+function showTab(t){
+  document.getElementById('tabStudents').style.display = t==='students' ? 'block' : 'none';
+  document.getElementById('tabStaff').style.display = t==='staff' ? 'block' : 'none';
+  document.getElementById('tabSettings').style.display = t==='settings' ? 'block' : 'none';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn'+t.charAt(0).toUpperCase()+t.slice(1)).classList.add('active');
+}
+
+function addStudent(){
+  let name = document.getElementById('sName').value;
+  if(!name) return alert('Enter student name');
+  data.students.push({ name, cls: document.getElementById('sClass').value, gender: document.getElementById('sGender').value, guardian: document.getElementById('sGuardian').value, phone: document.getElementById('sPhone').value });
+  save(); alert('Student saved'); document.getElementById('sName').value=''; document.getElementById('sClass').value=''; document.getElementById('sGuardian').value=''; document.getElementById('sPhone').value='';
+}
+function addStaff(){
+  let name = document.getElementById('tName').value;
+  if(!name) return alert('Enter staff name');
+  data.staffs.push({ name, role: document.getElementById('tRole').value, subject: document.getElementById('tSubject').value, phone: document.getElementById('tPhone').value });
+  save(); alert('Staff saved');
+}
+function addUser(){
+  let u = document.getElementById('newUser').value.trim();
+  let p = document.getElementById('newPass').value.trim();
+  if(!u || !p) return alert('Enter username and PIN');
+  if(data.users.find(x=>x.u===u)) return alert('Username already exists');
+  data.users.push({u,p}); save(); alert('Account added for '+u);
+}
+
+function renderStudents(){
+  let q = document.getElementById('searchStudent').value.toLowerCase();
+  let html = '';
+  data.students.forEach((s,i)=>{
+    if(s.name.toLowerCase().includes(q)){
+      html += `<tr><td>${s.name}</td><td>${s.cls}</td><td>${s.guardian}</td><td>${s.phone}</td><td><button class="btn btn-red" onclick="deleteStudent(${i})">Delete</button></td></tr>`;
+    }
+  });
+  document.getElementById('studentTable').innerHTML = html;
+}
+function renderStaffs(){
+  let q = document.getElementById('searchStaff').value.toLowerCase();
+  let html = '';
+  data.staffs.forEach((s,i)=>{
+    if(s.name.toLowerCase().includes(q)){
+      html += `<tr><td>${s.name}</td><td>${s.role}</td><td>${s.subject}</td><td>${s.phone}</td><td><button class="btn btn-red" onclick="deleteStaff(${i})">Delete</button></td></tr>`;
+    }
+  });
+  document.getElementById('staffTable').innerHTML = html;
+}
+function renderUsers(){
+  let html = '';
+  data.users.forEach((u,i)=>{
+    html += `<tr><td>${u.u}</td><td>${u.u==='admin' ? '' : `<button class="btn btn-red" onclick="deleteUser(${i})">Delete</button>`}</td></tr>`;
+  });
+  document.getElementById('userTable').innerHTML = html;
+}
+function deleteStudent(i){ if(confirm('Delete this student?')){ data.students.splice(i,1); save(); } }
+function deleteStaff(i){ if(confirm('Delete this staff?')){ data.staffs.splice(i,1); save(); } }
+function deleteUser(i){ if(confirm('Delete this login?')){ data.users.splice(i,1); save(); } }
+</script>
+</body>
+</html>
